@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.12)
 set(DEBUG_ON_PICO ON)
 set(PICO_PLATFORM rp2350)
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
-set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../pico-sdk)
+set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../pico_sdk)
 
 include(pico_sdk_import.cmake)
 
