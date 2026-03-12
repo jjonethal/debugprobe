@@ -288,6 +288,10 @@ void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
     vTaskResume(uart_taskhandle);
 }
 
+#ifndef PROBE_UART_DTR_FLOW_ENABLE
+#  define PROBE_UART_DTR_FLOW_ENABLE (1)
+#endif
+
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
 {
 #ifdef PROBE_UART_RTS
@@ -300,7 +304,9 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
   /* CDC drivers use linestate as a bodge to activate/deactivate the interface.
    * Resume our UART polling on activate, stop on deactivate */
   if (!dtr) {
+#if PROBE_UART_DTR_FLOW_ENABLE    
     vTaskSuspend(uart_taskhandle);
+#endif
 #ifdef PROBE_UART_RX_LED
     gpio_put(PROBE_UART_RX_LED, 0);
     rx_led_debounce = 0;
@@ -309,8 +315,11 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
     gpio_put(PROBE_UART_TX_LED, 0);
     tx_led_debounce = 0;
 #endif
-  } else
+  } else {
+#if PROBE_UART_DTR_FLOW_ENABLE    
     vTaskResume(uart_taskhandle);
+#endif
+  }
 }
 
 void tud_cdc_send_break_cb(uint8_t itf, uint16_t wValue) {
