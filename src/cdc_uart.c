@@ -31,6 +31,18 @@
 
 #include "probe_config.h"
 
+#ifndef PROBE_UART_DTR_FLOW_ENABLE
+# define PROBE_UART_DTR_FLOW_ENABLE (1)
+#endif
+  
+#if PROBE_UART_DTR_FLOW_ENABLE  
+  #define CDC_IS_CONNECTED() tud_cdc_connected()
+#else
+  #define CDC_IS_CONNECTED() tud_ready()
+#endif
+
+
+
 TaskHandle_t uart_taskhandle;
 TickType_t last_wake, interval = 100;
 volatile TickType_t break_expiry;
@@ -107,7 +119,7 @@ bool cdc_task(void)
         rx_buf[rx_len++] = uart_getc(PROBE_UART_INTERFACE);
     }
 
-    if (tud_cdc_connected()) {
+    if (CDC_IS_CONNECTED()) {
         was_connected = 1;
         int written = 0;
         /* Implicit overflow if we don't write all the bytes to the host.
@@ -233,7 +245,7 @@ void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
   uint data_bits, stop_bits;
 
   /* Modifying state, so park the thread before changing it. */
-  if (tud_cdc_connected())
+  if (CDC_IS_CONNECTED())
     vTaskSuspend(uart_taskhandle);
 
   cdc_uart_set_baudrate(line_coding->bit_rate);
@@ -284,7 +296,7 @@ void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
   uart_set_format(PROBE_UART_INTERFACE, data_bits, stop_bits, parity);
   /* Windows likes to arbitrarily set/get line coding after dtr/rts changes, so
    * don't resume if we shouldn't */
-  if(tud_cdc_connected())
+  if(CDC_IS_CONNECTED())
     vTaskResume(uart_taskhandle);
 }
 
@@ -304,7 +316,8 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
   /* CDC drivers use linestate as a bodge to activate/deactivate the interface.
    * Resume our UART polling on activate, stop on deactivate */
   if (!dtr) {
-#if PROBE_UART_DTR_FLOW_ENABLE    
+#if (PROBE_UART_DTR_FLOW_ENABLE)
+    enum test_flag {test=1/0};
     vTaskSuspend(uart_taskhandle);
 #endif
 #ifdef PROBE_UART_RX_LED
@@ -316,10 +329,15 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
     tx_led_debounce = 0;
 #endif
   } else {
-#if PROBE_UART_DTR_FLOW_ENABLE    
+#if (PROBE_UART_DTR_FLOW_ENABLE)
     vTaskResume(uart_taskhandle);
 #endif
   }
+  #if(!(PROBE_UART_DTR_FLOW_ENABLE))
+  {
+    vTaskResume(uart_taskhandle);
+  }
+  #endif
 }
 
 void tud_cdc_send_break_cb(uint8_t itf, uint16_t wValue) {
