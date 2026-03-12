@@ -35,7 +35,7 @@
 # define PROBE_UART_DTR_FLOW_ENABLE (1)
 #endif
   
-#if PROBE_UART_DTR_FLOW_ENABLE  
+#if (PROBE_UART_DTR_FLOW_ENABLE)
   #define CDC_IS_CONNECTED() tud_cdc_connected()
 #else
   #define CDC_IS_CONNECTED() tud_ready()
@@ -299,10 +299,6 @@ void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* line_coding)
   if(CDC_IS_CONNECTED())
     vTaskResume(uart_taskhandle);
 }
-
-#ifndef PROBE_UART_DTR_FLOW_ENABLE
-#  define PROBE_UART_DTR_FLOW_ENABLE (1)
-#endif
 
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
 {
